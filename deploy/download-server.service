@@ -1,0 +1,25 @@
+[Unit]
+Description=File download server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=download
+Group=download
+EnvironmentFile=-/var/lib/download-server/admin.env
+ExecStart=/usr/local/bin/download-server -addr :8080 -dir /var/lib/download-server/files -projects /var/www/html/git-projects -log /var/log/download-server/downloads.log -db /var/lib/download-server/downloads.db
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StateDirectory=download-server
+LogsDirectory=download-server
+StateDirectoryMode=0755
+LogsDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target
