@@ -130,11 +130,14 @@ func TestPublicFilesRequireCurl(t *testing.T) {
 		}
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
-		if rec.Code != http.StatusForbidden {
+		if rec.Code != http.StatusNotFound {
 			t.Fatalf("ua %q status %d", ua, rec.Code)
 		}
-		if strings.Contains(rec.Body.String(), "hello") {
-			t.Fatalf("ua %q returned the file", ua)
+		if strings.Contains(rec.Body.String(), "hello") || strings.Contains(rec.Body.String(), "download with curl") {
+			t.Fatalf("ua %q body %q", ua, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "404 page not found") {
+			t.Fatalf("ua %q body %q", ua, rec.Body.String())
 		}
 	}
 	if log.Len() != 0 {

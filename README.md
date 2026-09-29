@@ -1,13 +1,13 @@
 # Download server
 
-A small Go service that serves files for download and records each finished download. Files in the public directory download with curl. A browser or any other client is refused. The log page and the project file list need an admin login.
+A small Go service that serves files for download and records each finished download. Files in the public directory download with curl. A browser or any other client gets 404. The log page and the project file list need an admin login.
 
 Source directory on the VPS: `/opt/download-server`
 
 Live pages, replace the IP with the VPS address:
 
 - `http://216.126.239.166:8080/` shows `go is on the service`
-- `curl -O http://216.126.239.166:8080/files/sample.txt` downloads a public file. Opening that URL in a browser is refused.
+- `curl -O http://216.126.239.166:8080/files/sample.txt` downloads a public file. Opening that URL in a browser returns 404.
 - `http://216.126.239.166:8080/login` is the admin login
 - `http://216.126.239.166:8080/logs` is the download log (admin)
 - `http://216.126.239.166:8080/projects` lists admin-only project files (admin)
