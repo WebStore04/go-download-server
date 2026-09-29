@@ -72,7 +72,7 @@ func TestDownloadLogsCurlCommand(t *testing.T) {
 	log.Reset()
 	req = httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8080/files/notes/a%20b.txt", nil)
 	req.Host = "127.0.0.1:8080"
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+	req.Header.Set("User-Agent", "curl/8.5.0 (Windows NT 10.0; Win64; x64)")
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK || rec.Body.String() != "nested" {
@@ -93,7 +93,7 @@ func TestRepeatDownloadIsLogged(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		req := httptest.NewRequest(http.MethodGet, "/files/sample.txt", nil)
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+		req.Header.Set("User-Agent", "curl/8.5.0")
 		req.Header.Set("If-Modified-Since", "Mon, 01 Jan 2024 00:00:00 GMT")
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
@@ -106,6 +106,47 @@ func TestRepeatDownloadIsLogged(t *testing.T) {
 	}
 	if strings.Count(log.String(), "File: sample.txt") != 2 {
 		t.Fatalf("expected two log records, got %q", log.String())
+	}
+}
+
+func TestPublicFilesRequireCurl(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "sample.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var log strings.Builder
+	h := testServer(t, dir, &log).Handler()
+
+	for _, ua := range []string{
+		"",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+		"Wget/1.21.4",
+		"python-requests/2.32.0",
+		"curl",
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/files/sample.txt", nil)
+		if ua != "" {
+			req.Header.Set("User-Agent", ua)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("ua %q status %d", ua, rec.Code)
+		}
+		if strings.Contains(rec.Body.String(), "hello") {
+			t.Fatalf("ua %q returned the file", ua)
+		}
+	}
+	if log.Len() != 0 {
+		t.Fatalf("refused download was logged: %q", log.String())
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/files/sample.txt", nil)
+	req.Header.Set("User-Agent", "curl/8.5.0")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || rec.Body.String() != "hello" {
+		t.Fatalf("curl status %d body %q", rec.Code, rec.Body.String())
 	}
 }
 
@@ -152,6 +193,7 @@ func TestRejectsPathEscape(t *testing.T) {
 	h := testServer(t, dir, &log).Handler()
 	req := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8080/files/linked.txt", nil)
 	req.Host = "127.0.0.1:8080"
+	req.Header.Set("User-Agent", "curl/8.5.0")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {

@@ -139,7 +139,7 @@ func getenv(key, fallback string) string {
 func listenHint(addr string) string {
 	if strings.HasPrefix(addr, ":") {
 		port := strings.TrimPrefix(addr, ":")
-		return fmt.Sprintf("accepting connections on all interfaces, port %s. Downloads are public. Logs require http://YOUR_VPS_IP:%s/login", port, port)
+		return fmt.Sprintf("accepting connections on all interfaces, port %s. Public files download with curl. Logs require http://YOUR_VPS_IP:%s/login", port, port)
 	}
 	return "try: curl -O http://" + addr + "/files/<name>"
 }

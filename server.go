@@ -82,7 +82,20 @@ func (s *Server) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) download(w http.ResponseWriter, r *http.Request) {
+	if !curlClient(r.UserAgent()) {
+		http.Error(w, "download with curl", http.StatusForbidden)
+		return
+	}
 	s.serveAndLog(w, r, s.Dir, r.PathValue("path"))
+}
+
+func curlClient(ua string) bool {
+	fields := strings.Fields(ua)
+	if len(fields) == 0 || !strings.Contains(fields[0], "/") {
+		return false
+	}
+	name, _, _ := strings.Cut(fields[0], "/")
+	return strings.EqualFold(name, "curl")
 }
 
 func (s *Server) projectDownload(w http.ResponseWriter, r *http.Request) {
